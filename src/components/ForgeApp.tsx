@@ -366,8 +366,13 @@ function WorkoutDetail({
           <a
             key={dayWorkout.id}
             href={`/rutinas/${dayWorkout.id}`}
+            data-astro-reload
             className={dayWorkout.id === workout.id ? 'active' : ''}
             aria-current={dayWorkout.id === workout.id ? 'page' : undefined}
+            onClick={(event) => {
+              event.preventDefault();
+              window.location.assign(`/rutinas/${dayWorkout.id}`);
+            }}
           >
             <span>{dayWorkout.day.slice(0, 3)}</span>
             <strong>{dayWorkout.day}</strong>

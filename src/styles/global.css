@@ -442,7 +442,8 @@ summary:focus-visible {
   gap: 8px;
   margin-bottom: 36px;
 }
-.day-switcher a {
+.day-switcher a,
+.day-switcher button {
   min-width: 0;
   padding: 11px 6px;
   border: 1px solid #303030;
@@ -454,19 +455,25 @@ summary:focus-visible {
   gap: 3px;
   cursor: pointer;
   text-decoration: none;
+  font: inherit;
+  text-align: center;
+  appearance: none;
 }
-.day-switcher a span {
+.day-switcher a span,
+.day-switcher button span {
   font-size: 0.58rem;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.day-switcher a strong {
+.day-switcher a strong,
+.day-switcher button strong {
   overflow: hidden;
   font-size: 0.72rem;
   text-overflow: ellipsis;
 }
-.day-switcher a.active {
+.day-switcher a.active,
+.day-switcher button.active {
   border-color: var(--lime);
   background: var(--lime);
   color: #101500;
