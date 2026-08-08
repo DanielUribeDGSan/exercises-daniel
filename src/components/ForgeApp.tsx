@@ -128,6 +128,16 @@ export default function ForgeApp({ initialPath = '/' }: { initialPath?: string }
       exerciseIndex: 0,
     });
   };
+  const openExercise = (workout: Workout, nextIndex: number) => {
+    const exerciseId = workout.exerciseIds.at(nextIndex);
+    if (!exerciseId) return;
+    const exerciseSlug = getExerciseSlug(findExercise(exerciseId));
+    changePage(`/rutinas/${workout.id}/ejercicios/${exerciseSlug}`, {
+      view: 'player',
+      workout,
+      exerciseIndex: nextIndex,
+    });
+  };
   const navigate = (next: View) => {
     if (next === 'profile') {
       changePage('/perfil', { view: 'profile', workout: activeWorkout, exerciseIndex: 0 });
@@ -158,6 +168,7 @@ export default function ForgeApp({ initialPath = '/' }: { initialPath?: string }
           workout={activeWorkout}
           onBack={() => navigate('home')}
           onStart={startWorkout}
+          onOpenExercise={(nextIndex) => openExercise(activeWorkout, nextIndex)}
         />
       )}
       {view === 'player' && (
@@ -344,10 +355,12 @@ function WorkoutDetail({
   workout,
   onBack,
   onStart,
+  onOpenExercise,
 }: {
   workout: Workout;
   onBack: () => void;
   onStart: () => void;
+  onOpenExercise: (index: number) => void;
 }) {
   const workoutExercises = workout.exerciseIds.map(findExercise);
   return (
@@ -397,6 +410,15 @@ function WorkoutDetail({
         </div>
         {workoutExercises.map((exercise, index) => (
           <article className="exercise-row" key={exercise.id}>
+            <a
+              className="exercise-card-link"
+              href={`/rutinas/${workout.id}/ejercicios/${getExerciseSlug(exercise)}`}
+              aria-label={`Abrir ${exercise.shortName}`}
+              onClick={(event) => {
+                event.preventDefault();
+                onOpenExercise(index);
+              }}
+            />
             <img src={exercise.image} alt={exercise.shortName} />
             <div>
               <h2>{exercise.shortName}</h2>
@@ -448,6 +470,7 @@ function Player({
   const [duration, setDuration] = useState(exercise.seconds);
   const [seconds, setSeconds] = useState(exercise.seconds);
   const [playing, setPlaying] = useState(false);
+  const [sheetCollapsed, setSheetCollapsed] = useState(false);
   useEffect(() => {
     if (!playing || seconds === 0) return;
     const timer = window.setInterval(() => setSeconds((value) => value - 1), 1000);
@@ -464,7 +487,7 @@ function Player({
   };
   const formattedTime = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
   return (
-    <main className="player">
+    <main className={`player${sheetCollapsed ? ' sheet-collapsed' : ''}`}>
       <img
         className="player-media"
         src={exercise.gif}
@@ -482,73 +505,83 @@ function Player({
         </div>
       </header>
       <section className="player-sheet">
-        <div className="player-title">
-          <div>
-            <span>
-              {index + 1} DE {list.length}
-            </span>
-            <h1>{exercise.shortName}</h1>
-            <p>
-              {exercise.equipment} · {exercise.target}
-            </p>
-          </div>
-          <span className="set-pill">
-            {exercise.sets} × {exercise.reps}
-          </span>
-        </div>
-        <div className="timer-workspace">
-          <div className="timer-stepper" aria-label="Ajustar cronómetro">
-            <button onClick={() => adjustTimer(5)} aria-label="Agregar cinco segundos">
-              <ChevronUp />
-              <span>+5 s</span>
-            </button>
-            <button onClick={() => adjustTimer(-5)} aria-label="Quitar cinco segundos">
-              <ChevronDown />
-              <span>−5 s</span>
-            </button>
-          </div>
-          <div
-            className="timer"
-            style={
-              {
-                '--timer': `${String((seconds / duration) * 100)}%`,
-              } as React.CSSProperties
-            }
-          >
+        <button
+          className="player-sheet-toggle"
+          onClick={() => setSheetCollapsed((collapsed) => !collapsed)}
+          aria-expanded={!sheetCollapsed}
+          aria-label={sheetCollapsed ? 'Mostrar controles' : 'Ocultar controles'}
+        >
+          {sheetCollapsed ? <ChevronUp /> : <ChevronDown />}
+        </button>
+        <div className="player-sheet-content" aria-hidden={sheetCollapsed} inert={sheetCollapsed}>
+          <div className="player-title">
             <div>
-              <strong>{formattedTime}</strong>
-              <span>{seconds === 0 ? 'SERIE LISTA' : 'RESTANTES'}</span>
+              <span>
+                {index + 1} DE {list.length}
+              </span>
+              <h1>{exercise.shortName}</h1>
+              <p>
+                {exercise.equipment} · {exercise.target}
+              </p>
             </div>
+            <span className="set-pill">
+              {exercise.sets} × {exercise.reps}
+            </span>
           </div>
-          <button
-            className="reset-timer"
-            onClick={() => {
-              setSeconds(duration);
-              setPlaying(false);
-            }}
-          >
-            <RotateCcw />
-            <span>Reiniciar</span>
-          </button>
+          <div className="timer-workspace">
+            <div className="timer-stepper" aria-label="Ajustar cronómetro">
+              <button onClick={() => adjustTimer(5)} aria-label="Agregar cinco segundos">
+                <ChevronUp />
+                <span>+5 s</span>
+              </button>
+              <button onClick={() => adjustTimer(-5)} aria-label="Quitar cinco segundos">
+                <ChevronDown />
+                <span>−5 s</span>
+              </button>
+            </div>
+            <div
+              className="timer"
+              style={
+                {
+                  '--timer': `${String((seconds / duration) * 100)}%`,
+                } as React.CSSProperties
+              }
+            >
+              <div>
+                <strong>{formattedTime}</strong>
+                <span>{seconds === 0 ? 'SERIE LISTA' : 'RESTANTES'}</span>
+              </div>
+            </div>
+            <button
+              className="reset-timer"
+              onClick={() => {
+                setSeconds(duration);
+                setPlaying(false);
+              }}
+            >
+              <RotateCcw />
+              <span>Reiniciar</span>
+            </button>
+          </div>
+          <div className="player-controls">
+            <button onClick={() => setIndex(Math.max(0, index - 1))} disabled={index === 0}>
+              <SkipBack fill="currentColor" />
+              <span>ANTERIOR</span>
+            </button>
+            <button
+              className="pause-button"
+              onClick={() => setPlaying((value) => !value)}
+              aria-label={playing ? 'Pausar cronómetro' : 'Iniciar cronómetro'}
+            >
+              {playing ? <Pause fill="currentColor" /> : <Play fill="currentColor" />}
+            </button>
+            <button onClick={goNext}>
+              <SkipForward fill="currentColor" />
+              <span>{index === list.length - 1 ? 'TERMINAR' : 'SIGUIENTE'}</span>
+            </button>
+          </div>
+          <TechniqueSheet exercise={exercise} wideTrigger />
         </div>
-        <div className="player-controls">
-          <button onClick={() => setIndex(Math.max(0, index - 1))} disabled={index === 0}>
-            <SkipBack fill="currentColor" />
-            <span>ANTERIOR</span>
-          </button>
-          <button
-            className="pause-button"
-            onClick={() => setPlaying((value) => !value)}
-            aria-label={playing ? 'Pausar cronómetro' : 'Iniciar cronómetro'}
-          >
-            {playing ? <Pause fill="currentColor" /> : <Play fill="currentColor" />}
-          </button>
-          <button onClick={goNext}>
-            <SkipForward fill="currentColor" />
-            <span>{index === list.length - 1 ? 'TERMINAR' : 'SIGUIENTE'}</span>
-          </button>
-        </div>
-        <TechniqueSheet exercise={exercise} wideTrigger />
       </section>
     </main>
   );
