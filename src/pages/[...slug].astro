@@ -1,0 +1,18 @@
+---
+import AppPage from '../layouts/AppPage.astro';
+import { findExercise, getExerciseSlug, workouts } from '../data/workouts';
+
+export const getStaticPaths = () => {
+  const routinePaths = workouts.flatMap((workout) => [
+    { params: { slug: `rutinas/${workout.id}` } },
+    ...workout.exerciseIds.map((exerciseId) => ({
+      params: {
+        slug: `rutinas/${workout.id}/ejercicios/${getExerciseSlug(findExercise(exerciseId))}`,
+      },
+    })),
+  ]);
+  return [{ params: { slug: 'perfil' } }, ...routinePaths];
+};
+---
+
+<AppPage initialPath={Astro.url.pathname} />

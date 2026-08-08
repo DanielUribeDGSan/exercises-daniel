@@ -1,0 +1,25 @@
+---
+import '@fontsource-variable/inter';
+import ForgeApp from '../components/ForgeApp';
+import '../styles/global.css';
+
+type Props = { initialPath: string };
+const { initialPath } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta
+      name="description"
+      content="Plan de entrenamiento en casa para perder grasa y ganar fuerza."
+    />
+    <title>Daniel U. — Mi plan de entrenamiento</title>
+  </head>
+  <body>
+    <ForgeApp client:load initialPath={initialPath} />
+  </body>
+</html>
