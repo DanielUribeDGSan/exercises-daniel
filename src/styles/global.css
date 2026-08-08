@@ -453,6 +453,8 @@ summary:focus-visible {
   color: #777;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   text-decoration: none;
   font: inherit;
@@ -461,8 +463,10 @@ summary:focus-visible {
 }
 .day-switcher a strong,
 .day-switcher button strong {
+  display: block;
   overflow: hidden;
   font-size: 0.82rem;
+  line-height: 1;
   text-overflow: ellipsis;
 }
 .day-switcher a.active,
