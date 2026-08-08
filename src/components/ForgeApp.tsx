@@ -361,6 +361,19 @@ function WorkoutDetail({
           <Activity />
         </div>
       </header>
+      <nav className="day-switcher" aria-label="Días de entrenamiento">
+        {workouts.map((dayWorkout) => (
+          <a
+            key={dayWorkout.id}
+            href={`/rutinas/${dayWorkout.id}`}
+            className={dayWorkout.id === workout.id ? 'active' : ''}
+            aria-current={dayWorkout.id === workout.id ? 'page' : undefined}
+          >
+            <span>{dayWorkout.day.slice(0, 3)}</span>
+            <strong>{dayWorkout.day}</strong>
+          </a>
+        ))}
+      </nav>
       <section className="detail-intro">
         <span className="kicker">RUTINA DEL DÍA</span>
         <h1>{workout.day}</h1>
@@ -386,6 +399,9 @@ function WorkoutDetail({
               <p>
                 {exercise.sets} SERIES × {exercise.reps}
               </p>
+              {exercise.loadGuide && (
+                <small className="row-load">Inicio recomendado: {exercise.loadGuide.start}</small>
+              )}
             </div>
             <TechniqueSheet exercise={exercise} />
             <span className="row-number">0{index + 1}</span>
@@ -578,6 +594,23 @@ function TechniqueSheet({
               </span>
             </div>
             <div className="technique-copy">
+              {exercise.loadGuide && (
+                <section className="load-plan">
+                  <div>
+                    <span>COMIENZO</span>
+                    <strong>{exercise.loadGuide.start}</strong>
+                  </div>
+                  <ChevronRight />
+                  <div>
+                    <span>DESPUÉS DE 1 MES</span>
+                    <strong>{exercise.loadGuide.afterMonth}</strong>
+                  </div>
+                  <p>
+                    Sube únicamente si completas el máximo de repeticiones con técnica limpia y
+                    todavía podrías hacer dos repeticiones más.
+                  </p>
+                </section>
+              )}
               <section>
                 <h3>
                   <CircleCheck /> Cómo hacerlo

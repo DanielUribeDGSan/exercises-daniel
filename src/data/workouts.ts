@@ -10,6 +10,10 @@ export type Exercise = {
   image: string;
   gif: string;
   instructions: readonly string[];
+  loadGuide?: {
+    start: string;
+    afterMonth: string;
+  };
 };
 
 export type Workout = {
@@ -35,6 +39,7 @@ export const exercises: readonly Exercise[] = [
     seconds: 45,
     image: '/media/0289-SpYC0Kp.jpg',
     gif: '/media/0289-SpYC0Kp.gif',
+    loadGuide: { start: '2 × 6 kg', afterMonth: '2 × 8 kg' },
     instructions: [
       'Acuéstate con los pies firmes en el suelo.',
       'Baja las mancuernas con control hasta el pecho.',
@@ -52,6 +57,7 @@ export const exercises: readonly Exercise[] = [
     seconds: 40,
     image: '/media/0405-znQUdHY.jpg',
     gif: '/media/0405-znQUdHY.gif',
+    loadGuide: { start: '2 × 4 kg', afterMonth: '2 × 6 kg' },
     instructions: [
       'Ajusta el respaldo casi vertical.',
       'Mantén abdomen y glúteos firmes.',
@@ -69,6 +75,7 @@ export const exercises: readonly Exercise[] = [
     seconds: 35,
     image: '/media/2188-kont8Ut.jpg',
     gif: '/media/2188-kont8Ut.gif',
+    loadGuide: { start: '6 kg total', afterMonth: '8 kg total' },
     instructions: [
       'Sujeta una mancuerna detrás de la cabeza.',
       'Mantén los codos apuntando al frente.',
@@ -86,6 +93,7 @@ export const exercises: readonly Exercise[] = [
     seconds: 45,
     image: '/media/1459-rR0LJzx.jpg',
     gif: '/media/1459-rR0LJzx.gif',
+    loadGuide: { start: '2 × 8 kg', afterMonth: '2 × 12 kg' },
     instructions: [
       'Lleva la cadera hacia atrás con espalda neutra.',
       'Mantén las mancuernas cerca de las piernas.',
@@ -103,6 +111,7 @@ export const exercises: readonly Exercise[] = [
     seconds: 45,
     image: '/media/1760-yn8yg1r.jpg',
     gif: '/media/1760-yn8yg1r.gif',
+    loadGuide: { start: '10 kg total', afterMonth: '14 kg total' },
     instructions: [
       'Sujeta la mancuerna frente al pecho.',
       'Baja entre las caderas con rodillas alineadas.',
@@ -120,6 +129,7 @@ export const exercises: readonly Exercise[] = [
     seconds: 40,
     image: '/media/0336-RRWFUcw.jpg',
     gif: '/media/0336-RRWFUcw.gif',
+    loadGuide: { start: '2 × 4 kg', afterMonth: '2 × 6 kg' },
     instructions: [
       'Da un paso suficientemente largo.',
       'Baja ambas rodillas manteniendo el torso erguido.',
@@ -137,6 +147,7 @@ export const exercises: readonly Exercise[] = [
     seconds: 45,
     image: '/media/0293-BJ0Hz5L.jpg',
     gif: '/media/0293-BJ0Hz5L.gif',
+    loadGuide: { start: '2 × 6 kg', afterMonth: '2 × 9 kg' },
     instructions: [
       'Inclina el torso con la espalda neutra.',
       'Lleva los codos hacia las caderas.',
@@ -154,6 +165,7 @@ export const exercises: readonly Exercise[] = [
     seconds: 35,
     image: '/media/0294-NbVPDMW.jpg',
     gif: '/media/0294-NbVPDMW.gif',
+    loadGuide: { start: '2 × 3 kg', afterMonth: '2 × 5 kg' },
     instructions: [
       'Mantén los codos junto al torso.',
       'Sube sin balancear el cuerpo.',
