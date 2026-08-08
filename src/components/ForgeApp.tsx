@@ -374,7 +374,6 @@ function WorkoutDetail({
               window.location.assign(`/rutinas/${dayWorkout.id}`);
             }}
           >
-            <span>{dayWorkout.day.slice(0, 3)}</span>
             <strong>{dayWorkout.day}</strong>
           </a>
         ))}
