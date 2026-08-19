@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   ArrowLeft,
@@ -173,7 +173,7 @@ export default function ForgeApp({ initialPath = '/' }: { initialPath?: string }
       )}
       {view === 'player' && (
         <Player
-          key={`${activeWorkout.id}-${String(exerciseIndex)}`}
+          key={activeWorkout.id}
           workout={activeWorkout}
           index={exerciseIndex}
           setIndex={changeExercise}
@@ -451,6 +451,48 @@ function WorkoutDetail({
   );
 }
 
+let audioCtx: AudioContext | null = null;
+const initAudio = () => {
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  } catch (e) {
+    console.error('Audio not supported', e);
+  }
+};
+
+const playBeep = () => {
+  if (!audioCtx) return;
+  try {
+    const now = audioCtx.currentTime;
+    for (let i = 0; i < 5; i++) {
+      const startTime = now + i * 0.5;
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, startTime);
+      osc.frequency.exponentialRampToValueAtTime(300, startTime + 0.35);
+      
+      gainNode.gain.setValueAtTime(0, startTime);
+      gainNode.gain.linearRampToValueAtTime(1, startTime + 0.02);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.35);
+      
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      osc.start(startTime);
+      osc.stop(startTime + 0.35);
+    }
+  } catch (e) {
+    // ignore
+  }
+};
+
 function Player({
   workout,
   index,
@@ -471,10 +513,63 @@ function Player({
   const [seconds, setSeconds] = useState(exercise.seconds);
   const [playing, setPlaying] = useState(false);
   const [sheetCollapsed, setSheetCollapsed] = useState(false);
+  const [isCustomized, setIsCustomized] = useState(false);
+  const endTimeRef = useRef<number | null>(null);
+
+  const prevIndex = useRef(index);
   useEffect(() => {
-    if (!playing || seconds === 0) return;
-    const timer = window.setInterval(() => setSeconds((value) => value - 1), 1000);
-    return () => window.clearInterval(timer);
+    if (prevIndex.current !== index) {
+      if (!isCustomized) {
+        setDuration(exercise.seconds);
+        if (seconds === 0 || !playing) {
+          setSeconds(exercise.seconds);
+        }
+      } else {
+        if (seconds === 0) {
+          setSeconds(duration);
+          setPlaying(false);
+        }
+      }
+      prevIndex.current = index;
+      endTimeRef.current = null;
+    }
+  }, [index, exercise.seconds, isCustomized, seconds, duration, playing]);
+
+  useEffect(() => {
+    if (!playing || seconds === 0) {
+      endTimeRef.current = null;
+      if (seconds === 0 && playing) {
+        setPlaying(false);
+        playBeep();
+      }
+      return;
+    }
+
+    if (!endTimeRef.current) {
+      endTimeRef.current = Date.now() + seconds * 1000;
+    }
+
+    const updateTimer = () => {
+      if (!endTimeRef.current) return;
+      const remaining = Math.max(0, Math.round((endTimeRef.current - Date.now()) / 1000));
+      if (remaining !== seconds) {
+        setSeconds(remaining);
+      }
+    };
+
+    const timer = window.setInterval(updateTimer, 250);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && playing) {
+        updateTimer();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [playing, seconds]);
   const goNext = () => {
     if (index === list.length - 1) onComplete();
@@ -484,6 +579,10 @@ function Player({
     const nextDuration = Math.min(5999, Math.max(5, seconds + change));
     setDuration(nextDuration);
     setSeconds(nextDuration);
+    setIsCustomized(true);
+    if (playing) {
+      endTimeRef.current = Date.now() + nextDuration * 1000;
+    }
   };
   const formattedTime = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
   return (
@@ -570,10 +669,19 @@ function Player({
             </button>
             <button
               className="pause-button"
-              onClick={() => setPlaying((value) => !value)}
-              aria-label={playing ? 'Pausar cronómetro' : 'Iniciar cronómetro'}
+              onClick={() => {
+                initAudio();
+                if (seconds === 0) {
+                  setSeconds(duration);
+                  setPlaying(true);
+                } else {
+                  setPlaying((value) => !value);
+                }
+              }}
+              aria-label={seconds === 0 ? 'Reiniciar' : playing ? 'Pausar cronómetro' : 'Iniciar cronómetro'}
+              style={seconds === 0 ? { backgroundColor: 'var(--lime)', color: '#101500' } : undefined}
             >
-              {playing ? <Pause fill="currentColor" /> : <Play fill="currentColor" />}
+              {seconds === 0 ? <RotateCcw /> : playing ? <Pause fill="currentColor" /> : <Play fill="currentColor" />}
             </button>
             <button onClick={goNext}>
               <SkipForward fill="currentColor" />
@@ -623,7 +731,7 @@ function TechniqueSheet({
               <X />
             </Drawer.Close>
           </div>
-          <div className="sheet-body">
+          <div className="sheet-body" data-vaul-no-drag style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
             <div className="sheet-demo">
               <img src={exercise.gif} alt={`Demostración de ${exercise.shortName}`} />
               <span>
