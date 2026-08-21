@@ -454,14 +454,14 @@ function WorkoutDetail({
 let audioCtx: AudioContext | null = null;
 const initAudio = () => {
   try {
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
+    audioCtx ??= new window.AudioContext();
     if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
+      void audioCtx.resume().catch((error: unknown) => {
+        console.error('No fue posible activar el audio', error);
+      });
     }
-  } catch (e) {
-    console.error('Audio not supported', e);
+  } catch (error: unknown) {
+    console.error('Audio no disponible', error);
   }
 };
 
@@ -473,23 +473,23 @@ const playBeep = () => {
       const startTime = now + i * 0.5;
       const osc = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
-      
+
       osc.type = 'sine';
       osc.frequency.setValueAtTime(800, startTime);
       osc.frequency.exponentialRampToValueAtTime(300, startTime + 0.35);
-      
+
       gainNode.gain.setValueAtTime(0, startTime);
       gainNode.gain.linearRampToValueAtTime(1, startTime + 0.02);
       gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.35);
-      
+
       osc.connect(gainNode);
       gainNode.connect(audioCtx.destination);
-      
+
       osc.start(startTime);
       osc.stop(startTime + 0.35);
     }
-  } catch (e) {
-    // ignore
+  } catch {
+    return;
   }
 };
 
@@ -513,54 +513,34 @@ function Player({
   const [seconds, setSeconds] = useState(exercise.seconds);
   const [playing, setPlaying] = useState(false);
   const [sheetCollapsed, setSheetCollapsed] = useState(false);
-  const [isCustomized, setIsCustomized] = useState(false);
   const endTimeRef = useRef<number | null>(null);
-
-  const prevIndex = useRef(index);
-  useEffect(() => {
-    if (prevIndex.current !== index) {
-      if (!isCustomized) {
-        setDuration(exercise.seconds);
-        if (seconds === 0 || !playing) {
-          setSeconds(exercise.seconds);
-        }
-      } else {
-        if (seconds === 0) {
-          setSeconds(duration);
-          setPlaying(false);
-        }
-      }
-      prevIndex.current = index;
-      endTimeRef.current = null;
-    }
-  }, [index, exercise.seconds, isCustomized, seconds, duration, playing]);
 
   useEffect(() => {
     if (!playing || seconds === 0) {
       endTimeRef.current = null;
-      if (seconds === 0 && playing) {
-        setPlaying(false);
-        playBeep();
-      }
       return;
     }
 
-    if (!endTimeRef.current) {
-      endTimeRef.current = Date.now() + seconds * 1000;
-    }
+    endTimeRef.current ??= Date.now() + seconds * 1000;
 
     const updateTimer = () => {
-      if (!endTimeRef.current) return;
-      const remaining = Math.max(0, Math.round((endTimeRef.current - Date.now()) / 1000));
+      const endTime = endTimeRef.current;
+      if (endTime === null) return;
+      const remaining = Math.max(0, Math.round((endTime - Date.now()) / 1000));
       if (remaining !== seconds) {
         setSeconds(remaining);
+      }
+      if (remaining === 0) {
+        endTimeRef.current = null;
+        setPlaying(false);
+        playBeep();
       }
     };
 
     const timer = window.setInterval(updateTimer, 250);
 
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible' && playing) {
+      if (document.visibilityState === 'visible') {
         updateTimer();
       }
     };
@@ -579,7 +559,6 @@ function Player({
     const nextDuration = Math.min(5999, Math.max(5, seconds + change));
     setDuration(nextDuration);
     setSeconds(nextDuration);
-    setIsCustomized(true);
     if (playing) {
       endTimeRef.current = Date.now() + nextDuration * 1000;
     }
@@ -678,10 +657,20 @@ function Player({
                   setPlaying((value) => !value);
                 }
               }}
-              aria-label={seconds === 0 ? 'Reiniciar' : playing ? 'Pausar cronómetro' : 'Iniciar cronómetro'}
-              style={seconds === 0 ? { backgroundColor: 'var(--lime)', color: '#101500' } : undefined}
+              aria-label={
+                seconds === 0 ? 'Reiniciar' : playing ? 'Pausar cronómetro' : 'Iniciar cronómetro'
+              }
+              style={
+                seconds === 0 ? { backgroundColor: 'var(--lime)', color: '#101500' } : undefined
+              }
             >
-              {seconds === 0 ? <RotateCcw /> : playing ? <Pause fill="currentColor" /> : <Play fill="currentColor" />}
+              {seconds === 0 ? (
+                <RotateCcw />
+              ) : playing ? (
+                <Pause fill="currentColor" />
+              ) : (
+                <Play fill="currentColor" />
+              )}
             </button>
             <button onClick={goNext}>
               <SkipForward fill="currentColor" />
@@ -731,7 +720,11 @@ function TechniqueSheet({
               <X />
             </Drawer.Close>
           </div>
-          <div className="sheet-body" data-vaul-no-drag style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
+          <div
+            className="sheet-body"
+            data-vaul-no-drag
+            style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}
+          >
             <div className="sheet-demo">
               <img src={exercise.gif} alt={`Demostración de ${exercise.shortName}`} />
               <span>
