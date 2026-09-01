@@ -161,7 +161,7 @@ export default function ForgeApp({ initialPath = '/' }: { initialPath?: string }
   };
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${view === 'player' ? ' player-active' : ''}`}>
       {view === 'home' && <Dashboard completed={completed} onOpen={openWorkout} />}
       {view === 'workout' && (
         <WorkoutDetail
@@ -509,6 +509,7 @@ function Player({
   const list = useMemo(() => workout.exerciseIds.map(findExercise), [workout.exerciseIds]);
   const exercise = list.at(index);
   if (!exercise) throw new Error(`Exercise index ${String(index)} is outside the workout`);
+  const nextExercise = list.at(index + 1);
   const [duration, setDuration] = useState(exercise.seconds);
   const [seconds, setSeconds] = useState(exercise.seconds);
   const [playing, setPlaying] = useState(false);
@@ -576,11 +577,19 @@ function Player({
         <button className="glass-button" onClick={onExit} aria-label="Salir del reproductor">
           <ArrowLeft />
         </button>
-        <div>
-          <span>SIGUIENTE</span>
-          <strong>{list[index + 1]?.shortName ?? 'Finalizar rutina'}</strong>
-          <ChevronRight />
-        </div>
+        <button className="next-exercise-preview" onClick={goNext}>
+          <span className="next-exercise-copy">
+            <span>SIGUIENTE</span>
+            <strong>{nextExercise?.shortName ?? 'Finalizar rutina'}</strong>
+          </span>
+          <span className="next-exercise-circle">
+            {nextExercise ? (
+              <img src={nextExercise.gif} alt={`Siguiente: ${nextExercise.shortName}`} />
+            ) : (
+              <CircleCheck aria-hidden="true" />
+            )}
+          </span>
+        </button>
       </header>
       <section className="player-sheet">
         <button
