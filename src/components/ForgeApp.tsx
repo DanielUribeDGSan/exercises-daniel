@@ -123,6 +123,24 @@ export default function ForgeApp({ initialPath = '/' }: { initialPath?: string }
     return () => window.removeEventListener('popstate', handleHistoryChange);
   }, []);
 
+  useEffect(() => {
+    if (window.location.pathname === '/' || window.location.pathname === '') {
+      const savedSlug = localStorage.getItem('forge-active-plan');
+      if (savedSlug && savedSlug !== activePlan.slug) {
+        const route = resolveRoute(`/${savedSlug}`);
+        setActivePlan(route.plan);
+        setView(route.view);
+        setActiveWorkout(route.workout);
+        setExerciseIndex(route.exerciseIndex);
+        window.history.replaceState({}, '', `/${savedSlug}`);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('forge-active-plan', activePlan.slug);
+  }, [activePlan.slug]);
+
   const changePage = (path: string, route: RouteState) => {
     window.history.pushState({}, '', path);
     setView(route.view);
