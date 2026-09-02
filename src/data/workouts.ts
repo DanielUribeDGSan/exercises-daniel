@@ -28,7 +28,7 @@ export type Workout = {
 };
 
 export type TrainingPlan = {
-  slug: 'daniel-uribe' | 'adiline-salas';
+  slug: 'daniel-uribe' | 'adilene-salas';
   name: string;
   wordmark: string;
   height: string;
@@ -575,7 +575,7 @@ export const trainingPlans: readonly TrainingPlan[] = [
     workouts,
   },
   {
-    slug: 'adiline-salas',
+    slug: 'adilene-salas',
     name: 'Adiline Salas',
     wordmark: 'Adiline S.',
     height: '1.63–1.65 m',

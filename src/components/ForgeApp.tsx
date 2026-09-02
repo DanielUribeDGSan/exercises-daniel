@@ -281,7 +281,7 @@ function Dashboard({
               Define tu ritmo.
             </h1>
             <p>
-              {plan.slug === 'adiline-salas'
+              {plan.slug === 'adilene-salas'
                 ? 'Un plan de 5 días para entrenar en casa con dos mancuernas de 10 kg, peso corporal, el piso y una silla firme.'
                 : 'Un plan de 5 días creado para casa, con tu equipo y un objetivo claro: perder grasa mientras conservas y aumentas músculo.'}
             </p>
@@ -339,7 +339,7 @@ function Dashboard({
               Menos grasa.
             </h2>
             <p>
-              {plan.slug === 'adiline-salas'
+              {plan.slug === 'adilene-salas'
                 ? 'Con una estatura aproximada de 1.63–1.65 m, el enfoque será bajar grasa poco a poco y fortalecer especialmente piernas, glúteos y abdomen. La técnica y la constancia importan más que entrenar hasta el agotamiento.'
                 : 'Con 65–68 kg y 1.75 m, tu peso está en un rango saludable. El enfoque será recomposición corporal: progresar cargas, comer suficiente proteína y mantener un déficit pequeño, no perseguir una bajada agresiva.'}
             </p>
@@ -362,12 +362,12 @@ function Dashboard({
             <Salad />
             <span>GUÍA SIMPLE</span>
             <h3>
-              {plan.slug === 'adiline-salas'
+              {plan.slug === 'adilene-salas'
                 ? 'Comer bien sostiene el progreso.'
                 : 'Tu batido suma, no sustituye.'}
             </h3>
             <p>
-              {plan.slug === 'adiline-salas'
+              {plan.slug === 'adilene-salas'
                 ? 'Mantén comidas completas con proteína, verduras, fruta y suficiente agua. No necesitas eliminar grupos de alimentos para progresar.'
                 : 'Usa tu whey para llegar a 105–145 g de proteína diaria. Mantén verduras, fruta, agua y comidas completas como base.'}
             </p>
@@ -809,7 +809,7 @@ function TechniqueSheet({
               </span>
             </div>
             <div className="technique-copy">
-              {plan.slug === 'adiline-salas' && (
+              {plan.slug === 'adilene-salas' && (
                 <section className="home-adaptation">
                   <h3>
                     <Dumbbell /> Adaptación para casa
@@ -892,9 +892,9 @@ function Profile({
           </article>
           <article>
             <Dumbbell />
-            <strong>{plan.slug === 'adiline-salas' ? '2 × 10 kg' : '65–68 kg'}</strong>
+            <strong>{plan.slug === 'adilene-salas' ? '2 × 10 kg' : '65–68 kg'}</strong>
             <span>
-              {plan.slug === 'adiline-salas' ? 'Equipo disponible' : 'Peso de referencia'}
+              {plan.slug === 'adilene-salas' ? 'Equipo disponible' : 'Peso de referencia'}
             </span>
           </article>
           <article>
