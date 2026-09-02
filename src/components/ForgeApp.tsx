@@ -8,6 +8,7 @@ import {
   CircleUserRound,
   CircleCheck,
   Clock3,
+  Download,
   Dumbbell,
   Flame,
   Home,
@@ -250,6 +251,49 @@ function Header({ plan }: { plan: TrainingPlan }) {
     </header>
   );
 }
+function InstallAppButton() {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true) {
+      setIsStandalone(true);
+    }
+    
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    setIsIOS(/iphone|ipad|ipod/.test(userAgent));
+
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  if (isStandalone) return null;
+  if (!deferredPrompt && !isIOS) return null;
+
+  const handleInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    } else if (isIOS) {
+      alert('Para instalar la app en iPhone:\n\n1. Toca el ícono de Compartir (cuadrado con flecha hacia arriba) en la barra inferior de Safari.\n2. Selecciona "Agregar a inicio" (o "Add to Home Screen").');
+    }
+  };
+
+  return (
+    <button onClick={handleInstall} style={{ marginBottom: '1rem', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '100px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer' }}>
+      <Download size={20} /> Descargar la App
+    </button>
+  );
+}
 
 function Dashboard({
   plan,
@@ -293,6 +337,7 @@ function Dashboard({
                 <Clock3 /> 45 min
               </span>
             </div>
+            <InstallAppButton />
             <button className="primary-button" onClick={() => onOpen(today)}>
               Empezar hoy{' '}
               <span>
