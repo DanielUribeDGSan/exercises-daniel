@@ -27,6 +27,16 @@ export type Workout = {
   exerciseIds: readonly string[];
 };
 
+export type TrainingPlan = {
+  slug: 'daniel-uribe' | 'adiline-salas';
+  name: string;
+  wordmark: string;
+  height: string;
+  goal: string;
+  heroExerciseId: string;
+  workouts: readonly Workout[];
+};
+
 export const exercises: readonly Exercise[] = [
   {
     id: '0289',
@@ -312,7 +322,7 @@ export const exercises: readonly Exercise[] = [
     id: '0689',
     name: 'seated leg raise',
     shortName: 'Encogimientos sentado',
-    equipment: 'Banco',
+    equipment: 'Banco o silla firme',
     target: 'Abdomen',
     sets: 3,
     reps: '10–15',
@@ -320,7 +330,7 @@ export const exercises: readonly Exercise[] = [
     image: '/media/0689-Hgs6Nl1.jpg',
     gif: '/media/0689-Hgs6Nl1.gif',
     instructions: [
-      'Siéntate en el borde del banco y apoya las manos a los lados.',
+      'Siéntate en el borde de un banco o una silla firme y apoya las manos a los lados.',
       'Inclina ligeramente el torso y acerca las rodillas al pecho apretando el abdomen.',
       'Extiende las piernas con control sin perder la postura ni tocar el suelo.',
     ],
@@ -385,8 +395,8 @@ export const exercises: readonly Exercise[] = [
     sets: 3,
     reps: '8–15',
     seconds: 40,
-    image: '/media/0289-SpYC0Kp.jpg',
-    gif: '/media/0289-SpYC0Kp.gif',
+    image: '/media/0662-I4hDWkc.jpg',
+    gif: '/media/0662-I4hDWkc.gif',
     instructions: [
       'Coloca las manos un poco más abiertas que los hombros.',
       'Mantén abdomen y glúteos firmes para formar una línea recta.',
@@ -402,8 +412,8 @@ export const exercises: readonly Exercise[] = [
     sets: 3,
     reps: '10–15',
     seconds: 35,
-    image: '/media/0294-NbVPDMW.jpg',
-    gif: '/media/0294-NbVPDMW.gif',
+    image: '/media/0313-slDvUAU.jpg',
+    gif: '/media/0313-slDvUAU.gif',
     loadGuide: { start: '2 × 3 kg', afterMonth: '2 × 5 kg' },
     instructions: [
       'Sujeta las mancuernas con las palmas mirando hacia el torso.',
@@ -420,8 +430,8 @@ export const exercises: readonly Exercise[] = [
     sets: 4,
     reps: '12–15',
     seconds: 40,
-    image: '/media/1459-rR0LJzx.jpg',
-    gif: '/media/1459-rR0LJzx.gif',
+    image: '/media/3013-u0cNiij.jpg',
+    gif: '/media/3013-u0cNiij.gif',
     instructions: [
       'Acuéstate con las rodillas flexionadas y los pies apoyados al ancho de la cadera.',
       'Eleva la cadera apretando los glúteos sin arquear la espalda baja.',
@@ -437,8 +447,8 @@ export const exercises: readonly Exercise[] = [
     sets: 4,
     reps: '8–12',
     seconds: 40,
-    image: '/media/0294-NbVPDMW.jpg',
-    gif: '/media/0294-NbVPDMW.gif',
+    image: '/media/0031-25GPyDY.jpg',
+    gif: '/media/0031-25GPyDY.gif',
     loadGuide: { start: 'Barra ligera', afterMonth: '+ 2.5–5 kg' },
     instructions: [
       'Toma la barra al ancho de los hombros con las palmas hacia arriba.',
@@ -498,6 +508,80 @@ export const workouts: readonly Workout[] = [
     calories: 345,
     intensity: 'Moderado',
     exerciseIds: ['barbell-curl', '0289', '0293', '0405', '0857', '0620', '0630'],
+  },
+] as const;
+
+export const adilineWorkouts: readonly Workout[] = [
+  {
+    id: 'lunes',
+    day: 'Lunes',
+    title: 'Pierna & glúteo',
+    focus: 'Fuerza en casa',
+    duration: 45,
+    calories: 280,
+    intensity: 'Intenso',
+    exerciseIds: ['1760', '1459', '0336', 'glute-bridge', '0630', '0276'],
+  },
+  {
+    id: 'martes',
+    day: 'Martes',
+    title: 'Abdomen & estabilidad',
+    focus: 'Core completo',
+    duration: 35,
+    calories: 210,
+    intensity: 'Moderado',
+    exerciseIds: ['0003', '0872', '0276', '3544', '0620', '0687'],
+  },
+  {
+    id: 'miercoles',
+    day: 'Miércoles',
+    title: 'Glúteo & pierna',
+    focus: 'Control y resistencia',
+    duration: 45,
+    calories: 290,
+    intensity: 'Intenso',
+    exerciseIds: ['glute-bridge', '1760', '1459', '0336', '0689', '0630'],
+  },
+  {
+    id: 'jueves',
+    day: 'Jueves',
+    title: 'Glúteo & abdomen',
+    focus: 'Estabilidad y tono',
+    duration: 40,
+    calories: 250,
+    intensity: 'Moderado',
+    exerciseIds: ['glute-bridge', '1760', '0003', '3544', '0872', '0630'],
+  },
+  {
+    id: 'viernes',
+    day: 'Viernes',
+    title: 'Cuerpo completo en casa',
+    focus: 'Resistencia total',
+    duration: 50,
+    calories: 320,
+    intensity: 'Intenso',
+    exerciseIds: ['push-up', '1760', '1459', '0336', 'glute-bridge', '0003', '0630'],
+  },
+] as const;
+
+export const trainingPlans: readonly TrainingPlan[] = [
+  {
+    slug: 'daniel-uribe',
+    name: 'Daniel Uribe',
+    wordmark: 'Daniel U.',
+    height: '1.75 m',
+    goal: 'Recomposición',
+    heroExerciseId: '1459',
+    workouts,
+  },
+  {
+    slug: 'adiline-salas',
+    name: 'Adiline Salas',
+    wordmark: 'Adiline S.',
+    height: '1.63–1.65 m',
+    goal: 'Tonificar y bajar grasa',
+    heroExerciseId: 'glute-bridge',
+    workouts: adilineWorkouts,
   },
 ] as const;
 

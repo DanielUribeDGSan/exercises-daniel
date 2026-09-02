@@ -1,10 +1,13 @@
 ---
 import '@fontsource-variable/inter';
 import ForgeApp from '../components/ForgeApp';
+import { trainingPlans } from '../data/workouts';
 import '../styles/global.css';
 
 type Props = { initialPath: string };
 const { initialPath } = Astro.props;
+const pagePlan =
+  trainingPlans.find((plan) => initialPath.includes(`/${plan.slug}`)) ?? trainingPlans[0]!;
 ---
 
 <!doctype html>
@@ -17,7 +20,7 @@ const { initialPath } = Astro.props;
       name="description"
       content="Plan de entrenamiento en casa para perder grasa y ganar fuerza."
     />
-    <title>Daniel U. — Mi plan de entrenamiento</title>
+    <title>{pagePlan.wordmark} — Mi plan de entrenamiento</title>
   </head>
   <body>
     <ForgeApp client:load initialPath={initialPath} />

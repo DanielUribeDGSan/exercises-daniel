@@ -1,9 +1,21 @@
 ---
 import AppPage from '../layouts/AppPage.astro';
-import { findExercise, getExerciseSlug, workouts } from '../data/workouts';
+import { findExercise, getExerciseSlug, trainingPlans, workouts } from '../data/workouts';
 
 export const getStaticPaths = () => {
-  const routinePaths = workouts.flatMap((workout) => [
+  const planPaths = trainingPlans.flatMap((plan) => [
+    { params: { slug: plan.slug } },
+    { params: { slug: `${plan.slug}/perfil` } },
+    ...plan.workouts.flatMap((workout) => [
+      { params: { slug: `${plan.slug}/rutinas/${workout.id}` } },
+      ...workout.exerciseIds.map((exerciseId) => ({
+        params: {
+          slug: `${plan.slug}/rutinas/${workout.id}/ejercicios/${getExerciseSlug(findExercise(exerciseId))}`,
+        },
+      })),
+    ]),
+  ]);
+  const legacyPaths = workouts.flatMap((workout) => [
     { params: { slug: `rutinas/${workout.id}` } },
     ...workout.exerciseIds.map((exerciseId) => ({
       params: {
@@ -11,7 +23,7 @@ export const getStaticPaths = () => {
       },
     })),
   ]);
-  return [{ params: { slug: 'perfil' } }, ...routinePaths];
+  return [{ params: { slug: 'perfil' } }, ...legacyPaths, ...planPaths];
 };
 ---
 

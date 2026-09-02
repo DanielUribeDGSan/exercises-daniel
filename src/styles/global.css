@@ -1184,6 +1184,24 @@ summary:focus-visible {
   font-size: 0.68rem;
   line-height: 1.45;
 }
+.home-adaptation {
+  margin-bottom: 24px;
+  padding: 18px;
+  border: 1px solid #3c480e;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(195, 244, 0, 0.1), #1a1a1a);
+}
+.home-adaptation p {
+  margin: 0 0 10px;
+  color: #ddd;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+.home-adaptation small {
+  color: #8f9e54;
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
 .mistake-card {
   margin-top: 24px;
   padding: 18px;

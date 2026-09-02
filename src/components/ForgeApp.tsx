@@ -26,24 +26,29 @@ import { Drawer } from 'vaul';
 import {
   findExercise,
   getExerciseSlug,
-  workouts,
+  trainingPlans,
   type Exercise,
+  type TrainingPlan,
   type Workout,
 } from '../data/workouts';
 
 type View = 'home' | 'workout' | 'player' | 'profile';
 type Progress = Record<string, boolean>;
-type RouteState = { view: View; workout: Workout; exerciseIndex: number };
+type RouteState = { view: View; plan: TrainingPlan; workout: Workout; exerciseIndex: number };
 
-const STORAGE_KEY = 'forge-progress-v1';
+const getFirstPlan = (): TrainingPlan => {
+  const plan = trainingPlans.at(0);
+  if (!plan) throw new Error('The app must include at least one training plan');
+  return plan;
+};
 
-const getFirstWorkout = (): Workout => {
-  const workout = workouts.at(0);
+const getFirstWorkout = (plan: TrainingPlan): Workout => {
+  const workout = plan.workouts.at(0);
   if (!workout) throw new Error('The workout plan must include at least one day');
   return workout;
 };
 
-const today = getFirstWorkout();
+const defaultPlan = getFirstPlan();
 
 const getLeadExercise = (workout: Workout) => {
   const id = workout.exerciseIds.at(0);
@@ -53,35 +58,41 @@ const getLeadExercise = (workout: Workout) => {
 
 const resolveRoute = (path: string): RouteState => {
   const parts = path.split('/').filter(Boolean);
-  if (parts.at(0) === 'perfil') return { view: 'profile', workout: today, exerciseIndex: 0 };
-  if (parts.at(0) !== 'rutinas') return { view: 'home', workout: today, exerciseIndex: 0 };
+  const matchedPlan = trainingPlans.find((item) => item.slug === parts.at(0));
+  const plan = matchedPlan ?? defaultPlan;
+  const offset = matchedPlan ? 1 : 0;
+  const today = getFirstWorkout(plan);
+  if (parts.at(offset) === 'perfil')
+    return { view: 'profile', plan, workout: today, exerciseIndex: 0 };
+  if (parts.at(offset) !== 'rutinas')
+    return { view: 'home', plan, workout: today, exerciseIndex: 0 };
 
-  const workout = workouts.find((item) => item.id === parts.at(1)) ?? today;
-  const exerciseSlug = parts.at(3);
+  const workout = plan.workouts.find((item) => item.id === parts.at(offset + 1)) ?? today;
+  const exerciseSlug = parts.at(offset + 3);
   const exerciseIndex = exerciseSlug
     ? workout.exerciseIds.findIndex((id) => getExerciseSlug(findExercise(id)) === exerciseSlug)
     : -1;
-  if (parts.at(2) === 'ejercicios' && exerciseIndex >= 0) {
-    return { view: 'player', workout, exerciseIndex };
+  if (parts.at(offset + 2) === 'ejercicios' && exerciseIndex >= 0) {
+    return { view: 'player', plan, workout, exerciseIndex };
   }
-  return { view: 'workout', workout, exerciseIndex: 0 };
+  return { view: 'workout', plan, workout, exerciseIndex: 0 };
 };
 
-const useProgress = () => {
+const useProgress = (storageKey: string) => {
   const [progress, setProgress] = useState<Progress>(() => {
     if (typeof window === 'undefined') return {};
-    const saved = window.localStorage.getItem(STORAGE_KEY);
+    const saved = window.localStorage.getItem(storageKey);
     return saved ? (JSON.parse(saved) as Progress) : {};
   });
   const markDone = (id: string) => {
     setProgress((current) => {
       const next = { ...current, [id]: true };
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      window.localStorage.setItem(storageKey, JSON.stringify(next));
       return next;
     });
   };
   const reset = () => {
-    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(storageKey);
     setProgress({});
   };
   return { progress, markDone, reset };
@@ -89,15 +100,19 @@ const useProgress = () => {
 
 export default function ForgeApp({ initialPath = '/' }: { initialPath?: string }) {
   const initialRoute = resolveRoute(initialPath);
+  const [activePlan, setActivePlan] = useState<TrainingPlan>(initialRoute.plan);
   const [view, setView] = useState<View>(initialRoute.view);
   const [activeWorkout, setActiveWorkout] = useState<Workout>(initialRoute.workout);
   const [exerciseIndex, setExerciseIndex] = useState(initialRoute.exerciseIndex);
-  const { progress, markDone, reset } = useProgress();
-  const completed = workouts.filter((workout) => progress[workout.id]).length;
+  const { progress, markDone, reset } = useProgress(`forge-progress-${activePlan.slug}`);
+  const completed = activePlan.workouts.filter((workout) => progress[workout.id]).length;
+  const today = getFirstWorkout(activePlan);
+  const basePath = `/${activePlan.slug}`;
 
   useEffect(() => {
     const handleHistoryChange = () => {
       const route = resolveRoute(window.location.pathname);
+      setActivePlan(route.plan);
       setView(route.view);
       setActiveWorkout(route.workout);
       setExerciseIndex(route.exerciseIndex);
@@ -116,14 +131,20 @@ export default function ForgeApp({ initialPath = '/' }: { initialPath?: string }
   };
 
   const openWorkout = (workout: Workout) => {
-    changePage(`/rutinas/${workout.id}`, { view: 'workout', workout, exerciseIndex: 0 });
+    changePage(`${basePath}/rutinas/${workout.id}`, {
+      view: 'workout',
+      plan: activePlan,
+      workout,
+      exerciseIndex: 0,
+    });
   };
   const startWorkout = () => {
     const exerciseId = activeWorkout.exerciseIds.at(0);
     if (!exerciseId) return;
     const exerciseSlug = getExerciseSlug(findExercise(exerciseId));
-    changePage(`/rutinas/${activeWorkout.id}/ejercicios/${exerciseSlug}`, {
+    changePage(`${basePath}/rutinas/${activeWorkout.id}/ejercicios/${exerciseSlug}`, {
       view: 'player',
+      plan: activePlan,
       workout: activeWorkout,
       exerciseIndex: 0,
     });
@@ -132,29 +153,41 @@ export default function ForgeApp({ initialPath = '/' }: { initialPath?: string }
     const exerciseId = workout.exerciseIds.at(nextIndex);
     if (!exerciseId) return;
     const exerciseSlug = getExerciseSlug(findExercise(exerciseId));
-    changePage(`/rutinas/${workout.id}/ejercicios/${exerciseSlug}`, {
+    changePage(`${basePath}/rutinas/${workout.id}/ejercicios/${exerciseSlug}`, {
       view: 'player',
+      plan: activePlan,
       workout,
       exerciseIndex: nextIndex,
     });
   };
   const navigate = (next: View) => {
     if (next === 'profile') {
-      changePage('/perfil', { view: 'profile', workout: activeWorkout, exerciseIndex: 0 });
+      changePage(`${basePath}/perfil`, {
+        view: 'profile',
+        plan: activePlan,
+        workout: activeWorkout,
+        exerciseIndex: 0,
+      });
       return;
     }
     if (next === 'workout') {
       openWorkout(activeWorkout);
       return;
     }
-    changePage('/', { view: 'home', workout: activeWorkout, exerciseIndex: 0 });
+    changePage(basePath, {
+      view: 'home',
+      plan: activePlan,
+      workout: activeWorkout,
+      exerciseIndex: 0,
+    });
   };
   const changeExercise = (nextIndex: number) => {
     const exerciseId = activeWorkout.exerciseIds.at(nextIndex);
     if (!exerciseId) return;
     const exerciseSlug = getExerciseSlug(findExercise(exerciseId));
-    changePage(`/rutinas/${activeWorkout.id}/ejercicios/${exerciseSlug}`, {
+    changePage(`${basePath}/rutinas/${activeWorkout.id}/ejercicios/${exerciseSlug}`, {
       view: 'player',
+      plan: activePlan,
       workout: activeWorkout,
       exerciseIndex: nextIndex,
     });
@@ -162,10 +195,13 @@ export default function ForgeApp({ initialPath = '/' }: { initialPath?: string }
 
   return (
     <div className={`app-shell${view === 'player' ? ' player-active' : ''}`}>
-      {view === 'home' && <Dashboard completed={completed} onOpen={openWorkout} />}
+      {view === 'home' && (
+        <Dashboard plan={activePlan} completed={completed} onOpen={openWorkout} />
+      )}
       {view === 'workout' && (
         <WorkoutDetail
           workout={activeWorkout}
+          plan={activePlan}
           onBack={() => navigate('home')}
           onStart={startWorkout}
           onOpenExercise={(nextIndex) => openExercise(activeWorkout, nextIndex)}
@@ -174,6 +210,7 @@ export default function ForgeApp({ initialPath = '/' }: { initialPath?: string }
       {view === 'player' && (
         <Player
           key={activeWorkout.id}
+          plan={activePlan}
           workout={activeWorkout}
           index={exerciseIndex}
           setIndex={changeExercise}
@@ -184,7 +221,7 @@ export default function ForgeApp({ initialPath = '/' }: { initialPath?: string }
           }}
         />
       )}
-      {view === 'profile' && <Profile completed={completed} onReset={reset} />}
+      {view === 'profile' && <Profile plan={activePlan} completed={completed} onReset={reset} />}
       {view !== 'player' && (
         <BottomNav active={view} onNavigate={navigate} onWorkouts={() => openWorkout(today)} />
       )}
@@ -192,19 +229,20 @@ export default function ForgeApp({ initialPath = '/' }: { initialPath?: string }
   );
 }
 
-function Header() {
+function Header({ plan }: { plan: TrainingPlan }) {
+  const basePath = `/${plan.slug}`;
   return (
     <header className="topbar">
       <button className="icon-button menu-button" aria-label="Abrir menú">
         <Dumbbell />
       </button>
-      <a className="wordmark" href="/">
-        Daniel U.
+      <a className="wordmark" href={basePath}>
+        {plan.wordmark}
       </a>
       <nav>
-        <a href="/">Inicio</a>
-        <a href="/rutinas/lunes">Entrenamientos</a>
-        <a href="/perfil">Mi perfil</a>
+        <a href={basePath}>Inicio</a>
+        <a href={`${basePath}/rutinas/lunes`}>Entrenamientos</a>
+        <a href={`${basePath}/perfil`}>Mi perfil</a>
       </nav>
       <div className="avatar" aria-label="Perfil">
         <Activity />
@@ -214,21 +252,24 @@ function Header() {
 }
 
 function Dashboard({
+  plan,
   completed,
   onOpen,
 }: {
+  plan: TrainingPlan;
   completed: number;
   onOpen: (workout: Workout) => void;
 }) {
+  const today = getFirstWorkout(plan);
   return (
     <>
-      <Header />
+      <Header plan={plan} />
       <main id="inicio">
         <section className="hero">
           <div className="hero-media">
             <img
-              src="/media/1459-rR0LJzx.gif"
-              alt="Demostración de peso muerto rumano con mancuernas"
+              src={findExercise(plan.heroExerciseId).gif}
+              alt={`Demostración de ${findExercise(plan.heroExerciseId).shortName}`}
             />
           </div>
           <div className="hero-shade" />
@@ -240,8 +281,9 @@ function Dashboard({
               Define tu ritmo.
             </h1>
             <p>
-              Un plan de 5 días creado para casa, con tu equipo y un objetivo claro: perder grasa
-              mientras conservas y aumentas músculo.
+              {plan.slug === 'adiline-salas'
+                ? 'Un plan de 5 días para entrenar en casa con dos mancuernas de 10 kg, peso corporal, el piso y una silla firme.'
+                : 'Un plan de 5 días creado para casa, con tu equipo y un objetivo claro: perder grasa mientras conservas y aumentas músculo.'}
             </p>
             <div className="hero-metrics">
               <span>
@@ -269,7 +311,7 @@ function Dashboard({
             <p>Fuerza primero, cardio inteligente y recuperación suficiente.</p>
           </div>
           <div className="workout-grid">
-            {workouts.map((workout, index) => (
+            {plan.workouts.map((workout, index) => (
               <button className="workout-card" key={workout.id} onClick={() => onOpen(workout)}>
                 <img src={getLeadExercise(workout).image} alt="" />
                 <div className="card-gradient" />
@@ -297,9 +339,9 @@ function Dashboard({
               Menos grasa.
             </h2>
             <p>
-              Con 65–68 kg y 1.75 m, tu peso está en un rango saludable. El enfoque será
-              recomposición corporal: progresar cargas, comer suficiente proteína y mantener un
-              déficit pequeño, no perseguir una bajada agresiva.
+              {plan.slug === 'adiline-salas'
+                ? 'Con una estatura aproximada de 1.63–1.65 m, el enfoque será bajar grasa poco a poco y fortalecer especialmente piernas, glúteos y abdomen. La técnica y la constancia importan más que entrenar hasta el agotamiento.'
+                : 'Con 65–68 kg y 1.75 m, tu peso está en un rango saludable. El enfoque será recomposición corporal: progresar cargas, comer suficiente proteína y mantener un déficit pequeño, no perseguir una bajada agresiva.'}
             </p>
             <div className="goal-stats">
               <div>
@@ -319,10 +361,15 @@ function Dashboard({
           <div className="nutrition-card">
             <Salad />
             <span>GUÍA SIMPLE</span>
-            <h3>Tu batido suma, no sustituye.</h3>
+            <h3>
+              {plan.slug === 'adiline-salas'
+                ? 'Comer bien sostiene el progreso.'
+                : 'Tu batido suma, no sustituye.'}
+            </h3>
             <p>
-              Usa tu whey para llegar a 105–145 g de proteína diaria. Mantén verduras, fruta, agua y
-              comidas completas como base.
+              {plan.slug === 'adiline-salas'
+                ? 'Mantén comidas completas con proteína, verduras, fruta y suficiente agua. No necesitas eliminar grupos de alimentos para progresar.'
+                : 'Usa tu whey para llegar a 105–145 g de proteína diaria. Mantén verduras, fruta, agua y comidas completas como base.'}
             </p>
             <small>
               Empieza con un déficit aproximado de 200–300 kcal y ajusta según tu promedio de peso
@@ -352,11 +399,13 @@ function Dashboard({
 }
 
 function WorkoutDetail({
+  plan,
   workout,
   onBack,
   onStart,
   onOpenExercise,
 }: {
+  plan: TrainingPlan;
   workout: Workout;
   onBack: () => void;
   onStart: () => void;
@@ -369,22 +418,22 @@ function WorkoutDetail({
         <button className="icon-button" onClick={onBack} aria-label="Volver">
           <ArrowLeft />
         </button>
-        <span className="wordmark">Daniel U.</span>
+        <span className="wordmark">{plan.wordmark}</span>
         <div className="avatar">
           <Activity />
         </div>
       </header>
       <nav className="day-switcher" aria-label="Días de entrenamiento">
-        {workouts.map((dayWorkout) => (
+        {plan.workouts.map((dayWorkout) => (
           <a
             key={dayWorkout.id}
-            href={`/rutinas/${dayWorkout.id}`}
+            href={`/${plan.slug}/rutinas/${dayWorkout.id}`}
             data-astro-reload
             className={dayWorkout.id === workout.id ? 'active' : ''}
             aria-current={dayWorkout.id === workout.id ? 'page' : undefined}
             onClick={(event) => {
               event.preventDefault();
-              window.location.assign(`/rutinas/${dayWorkout.id}`);
+              window.location.assign(`/${plan.slug}/rutinas/${dayWorkout.id}`);
             }}
           >
             <strong>{dayWorkout.day}</strong>
@@ -412,7 +461,7 @@ function WorkoutDetail({
           <article className="exercise-row" key={exercise.id}>
             <a
               className="exercise-card-link"
-              href={`/rutinas/${workout.id}/ejercicios/${getExerciseSlug(exercise)}`}
+              href={`/${plan.slug}/rutinas/${workout.id}/ejercicios/${getExerciseSlug(exercise)}`}
               aria-label={`Abrir ${exercise.shortName}`}
               onClick={(event) => {
                 event.preventDefault();
@@ -425,11 +474,11 @@ function WorkoutDetail({
               <p>
                 {exercise.sets} SERIES × {exercise.reps}
               </p>
-              {exercise.loadGuide && (
+              {plan.slug === 'daniel-uribe' && exercise.loadGuide && (
                 <small className="row-load">Inicio recomendado: {exercise.loadGuide.start}</small>
               )}
             </div>
-            <TechniqueSheet exercise={exercise} />
+            <TechniqueSheet exercise={exercise} plan={plan} />
             <span className="row-number">0{index + 1}</span>
           </article>
         ))}
@@ -494,12 +543,14 @@ const playBeep = () => {
 };
 
 function Player({
+  plan,
   workout,
   index,
   setIndex,
   onExit,
   onComplete,
 }: {
+  plan: TrainingPlan;
   workout: Workout;
   index: number;
   setIndex: (index: number) => void;
@@ -686,7 +737,7 @@ function Player({
               <span>{index === list.length - 1 ? 'TERMINAR' : 'SIGUIENTE'}</span>
             </button>
           </div>
-          <TechniqueSheet exercise={exercise} wideTrigger />
+          <TechniqueSheet exercise={exercise} plan={plan} wideTrigger />
         </div>
       </section>
     </main>
@@ -695,11 +746,28 @@ function Player({
 
 function TechniqueSheet({
   exercise,
+  plan,
   wideTrigger = false,
 }: {
   exercise: Exercise;
+  plan: TrainingPlan;
   wideTrigger?: boolean;
 }) {
+  const adilineGuide: Record<string, string> = {
+    '1760':
+      'Usa una sola mancuerna de 10 kg frente al pecho. Si todavía cuesta mantener la postura, haz primero la sentadilla sin peso.',
+    '1459':
+      'Empieza con una sola mancuerna de 10 kg sujetada con ambas manos. Usa las dos únicamente cuando puedas controlar todo el recorrido sin redondear la espalda.',
+    '0336':
+      'Empieza sin peso. Cuando tengas buen equilibrio, toma una sola mancuerna de 10 kg junto al pecho.',
+    'glute-bridge':
+      'Hazlo primero solo con tu peso corporal sobre el piso. Si se vuelve fácil, coloca una mancuerna de 10 kg sobre la cadera y sujétala con ambas manos.',
+    'push-up':
+      'Haz las flexiones con las rodillas apoyadas o con las manos sobre una silla firme si la versión en el piso es demasiado pesada.',
+  };
+  const homeAdaptation =
+    adilineGuide[exercise.id] ??
+    'Este ejercicio se hace únicamente con el peso corporal. Usa el piso y una colchoneta o toalla si necesitas mayor comodidad.';
   return (
     <Drawer.Root shouldScaleBackground>
       <Drawer.Trigger asChild>
@@ -741,7 +809,19 @@ function TechniqueSheet({
               </span>
             </div>
             <div className="technique-copy">
-              {exercise.loadGuide && (
+              {plan.slug === 'adiline-salas' && (
+                <section className="home-adaptation">
+                  <h3>
+                    <Dumbbell /> Adaptación para casa
+                  </h3>
+                  <p>{homeAdaptation}</p>
+                  <small>
+                    Empieza siempre por la opción más fácil. Agrega peso solo cuando completes todas
+                    las repeticiones con técnica limpia y sin dolor.
+                  </small>
+                </section>
+              )}
+              {plan.slug === 'daniel-uribe' && exercise.loadGuide && (
                 <section className="load-plan">
                   <div>
                     <span>COMIENZO</span>
@@ -785,10 +865,18 @@ function TechniqueSheet({
   );
 }
 
-function Profile({ completed, onReset }: { completed: number; onReset: () => void }) {
+function Profile({
+  plan,
+  completed,
+  onReset,
+}: {
+  plan: TrainingPlan;
+  completed: number;
+  onReset: () => void;
+}) {
   return (
     <main className="profile-page">
-      <Header />
+      <Header plan={plan} />
       <section>
         <span className="kicker">MI PERFIL</span>
         <h1>Tu progreso, sin ruido.</h1>
@@ -799,17 +887,19 @@ function Profile({ completed, onReset }: { completed: number; onReset: () => voi
         <div className="profile-grid">
           <article>
             <Target />
-            <strong>Recomposición</strong>
+            <strong>{plan.goal}</strong>
             <span>Objetivo principal</span>
           </article>
           <article>
             <Dumbbell />
-            <strong>65–68 kg</strong>
-            <span>Peso de referencia</span>
+            <strong>{plan.slug === 'adiline-salas' ? '2 × 10 kg' : '65–68 kg'}</strong>
+            <span>
+              {plan.slug === 'adiline-salas' ? 'Equipo disponible' : 'Peso de referencia'}
+            </span>
           </article>
           <article>
             <Activity />
-            <strong>1.75 m</strong>
+            <strong>{plan.height}</strong>
             <span>Estatura registrada</span>
           </article>
           <article>
